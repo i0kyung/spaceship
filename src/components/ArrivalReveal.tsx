@@ -1,12 +1,13 @@
 import { motion } from 'framer-motion'
 import { storyTexts } from '../data/storyTexts'
+import { mediaUrl } from '../lib/media'
 import Starfield from './Starfield'
 
 export default function ArrivalReveal() {
   return (
-    <section className="relative flex h-screen w-full flex-col items-center justify-center overflow-hidden bg-[#0b1030]">
+    <section className="relative flex h-screen w-full snap-start flex-col items-center justify-center overflow-hidden bg-[#0b1030]">
       <img
-        src="/media/warp-tunnel-earth-bg.png"
+        src={mediaUrl('warp-tunnel-earth-bg.png')}
         alt="워프 터널 끝에 보이는 지구"
         className="absolute inset-0 h-full w-full object-cover"
       />

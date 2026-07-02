@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { destinations } from '../data/destinations'
 import { storyTexts } from '../data/storyTexts'
+import { mediaUrl } from '../lib/media'
 
 const SHUFFLE_TICKS = 12
 const SHUFFLE_INTERVAL_MS = 90
@@ -36,9 +37,9 @@ export default function DestinationGacha() {
   }
 
   return (
-    <section className="relative flex h-screen w-full flex-col items-center justify-center overflow-hidden bg-cockpit-purple">
+    <section className="relative flex h-screen w-full snap-start flex-col items-center justify-center overflow-hidden bg-cockpit-purple">
       <img
-        src="/media/spaceship-gacha-bg.png"
+        src={mediaUrl('spaceship-gacha-bg.png')}
         alt="목적지 뽑기 캡슐 기계"
         className="absolute inset-0 h-full w-full object-cover"
       />

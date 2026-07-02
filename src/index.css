@@ -13,6 +13,10 @@ body,
   overflow-x: hidden;
 }
 
+html {
+  scroll-snap-type: y proximity;
+}
+
 body {
   font-family: 'Jua', 'Pretendard', sans-serif;
   color: #1e2a4a;

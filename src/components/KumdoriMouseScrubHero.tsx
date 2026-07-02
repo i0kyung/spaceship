@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { storyTexts } from '../data/storyTexts'
+import { mediaUrl } from '../lib/media'
 
 // pointer가 영역을 벗어나면 영상을 중앙 프레임(duration / 2)으로 되돌릴지 여부.
 // false로 바꾸면 마지막으로 보던 프레임에 멈춰 있습니다.
@@ -100,32 +101,37 @@ export default function KumdoriMouseScrubHero() {
   return (
     <section
       ref={containerRef}
-      className="relative h-screen w-full overflow-hidden bg-cockpit-sky select-none"
+      className="relative h-screen w-full snap-start overflow-hidden bg-cockpit-sky select-none"
     >
-      {/* 배경: 영상 로딩 전/여백 보정용 폴백 (영상 자체에 우주선 배경이 포함되어 있음) */}
+      {/* 배경: 영상 letterbox 여백을 자연스럽게 채우는 폴백 (영상 자체에 우주선 배경이 포함되어 있음) */}
       <img
-        src="/media/spaceship-window-clear.png"
+        src={mediaUrl('spaceship-window-clear.png')}
         alt=""
         className="pointer-events-none absolute inset-0 h-full w-full object-cover"
       />
 
-      {/* 꿈돌이 영상 레이어 — 영상 자체에 우주선 배경이 포함되어 있어 전체 배경처럼 크게 배치 */}
-      <video
-        ref={videoRef}
-        src="/media/kumdori-look.mp4"
-        muted
-        playsInline
-        preload="auto"
-        autoPlay={false}
-        // 화면 비율에 따라 잘림이 거슬리면 object-contain으로 바꿔도 됩니다.
-        className="pointer-events-none absolute inset-0 h-full w-full object-cover"
-      />
+      {/* 꿈돌이 영상 레이어 — 잘리지 않도록 object-contain으로 전체 프레임을 보존하며 중앙 배치 */}
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+        <video
+          ref={videoRef}
+          src={mediaUrl('kumdori-look.mp4')}
+          muted
+          playsInline
+          preload="auto"
+          autoPlay={false}
+          // 화면을 꽉 채우고 싶다면 object-cover로 바꿀 수 있지만, 얼굴/몸통이 잘릴 수 있습니다.
+          className="h-auto max-h-[85%] w-auto max-w-[92%] object-contain drop-shadow-2xl"
+        />
+      </div>
+
+      {/* 하단 텍스트 가독성을 위한 얇은 그라데이션 스크림 */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/50 to-transparent" />
 
       {/* 투명한 pointer 감지 영역 (전체를 덮되 UI 클릭은 막지 않음) */}
       <div className="absolute inset-0 z-10" />
 
       {/* 텍스트 / UI */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-16 z-20 flex flex-col items-center gap-2 text-center px-4">
+      <div className="pointer-events-none absolute inset-x-0 bottom-10 z-20 flex flex-col items-center gap-2 text-center px-4">
         <span className="text-sm tracking-widest text-white/80">{storyTexts.hero.eyebrow}</span>
         <h1 className="text-4xl md:text-6xl font-bold text-white drop-shadow-lg">
           {storyTexts.hero.title}
