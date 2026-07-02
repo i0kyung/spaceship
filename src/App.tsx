@@ -1,47 +1,55 @@
-import { useRef, useState } from 'react'
+import { useCallback, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import KumdoriMouseScrubHero from './components/KumdoriMouseScrubHero'
 import WindowWipeInteraction from './components/WindowWipeInteraction'
 import DestinationGacha from './components/DestinationGacha'
 import ArrivalReveal from './components/ArrivalReveal'
 import BoardingGate from './components/BoardingGate'
-import TravelLoadingOverlay from './components/TravelLoadingOverlay'
 import { useHandTracking } from './hooks/useHandTracking'
+
+type Stage = 'intro' | 'wipe' | 'gacha' | 'arrival'
 
 function App() {
   const hand = useHandTracking()
-  const [hasBoarded, setHasBoarded] = useState(false)
-  const [isTraveling, setIsTraveling] = useState(false)
-  const wipeSectionRef = useRef<HTMLDivElement>(null)
-  const gachaSectionRef = useRef<HTMLDivElement>(null)
+  const [activeStage, setActiveStage] = useState<Stage>('intro')
 
-  const handleBoard = () => {
-    setHasBoarded(true)
-    wipeSectionRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
+  const goToWipe = useCallback(() => setActiveStage('wipe'), [])
+  const goToGacha = useCallback(() => setActiveStage('gacha'), [])
+  const goToArrival = useCallback(() => setActiveStage('arrival'), [])
 
-  const handleTravelDone = () => {
-    setIsTraveling(false)
-    gachaSectionRef.current?.scrollIntoView({ behavior: 'smooth' })
+  const renderStage = () => {
+    switch (activeStage) {
+      case 'intro':
+        return (
+          <KumdoriMouseScrubHero onComplete={goToWipe}>
+            <BoardingGate hand={hand} onBoard={goToWipe} />
+          </KumdoriMouseScrubHero>
+        )
+      case 'wipe':
+        return <WindowWipeInteraction hand={hand} onNext={goToGacha} />
+      case 'gacha':
+        return <DestinationGacha onComplete={goToArrival} />
+      case 'arrival':
+        return <ArrivalReveal />
+      default:
+        return null
+    }
   }
 
   return (
-    <main className="snap-y snap-mandatory">
-      {isTraveling && <TravelLoadingOverlay onDone={handleTravelDone} />}
-
-      {/* 1. 첫 만남 */}
-      <KumdoriMouseScrubHero>
-        {!hasBoarded && <BoardingGate hand={hand} onBoard={handleBoard} />}
-      </KumdoriMouseScrubHero>
-      {/* 2. 우주창 닦기 */}
-      <div ref={wipeSectionRef}>
-        <WindowWipeInteraction hand={hand} onNext={() => setIsTraveling(true)} />
-      </div>
-      {/* 3. 목적지 뽑기 */}
-      <div ref={gachaSectionRef}>
-        <DestinationGacha />
-      </div>
-      {/* 4. 이스터에그 / 확정 */}
-      <ArrivalReveal />
+    <main className="relative h-screen overflow-hidden bg-[#0b1030]">
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeStage}
+          initial={{ opacity: 0, filter: 'blur(14px)', scale: 1.015 }}
+          animate={{ opacity: 1, filter: 'blur(0px)', scale: 1 }}
+          exit={{ opacity: 0, filter: 'blur(18px)', scale: 0.985 }}
+          transition={{ duration: 0.55, ease: 'easeOut' }}
+          className="absolute inset-0"
+        >
+          {renderStage()}
+        </motion.div>
+      </AnimatePresence>
     </main>
   )
 }

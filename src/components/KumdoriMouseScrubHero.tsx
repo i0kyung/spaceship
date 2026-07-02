@@ -7,17 +7,25 @@ import { mediaUrl } from '../lib/media'
 const RETURN_TO_CENTER = true
 
 // currentTime이 targetTime을 따라가는 보간 속도 (0~1). 낮을수록 부드럽고 느리게 반응합니다.
-const LERP_FACTOR = 0.08
+const LERP_FACTOR = 0.18
+const COMPLETE_AFTER_MS = 2400
+const COMPLETE_SPREAD = 0.5
 
 interface KumdoriMouseScrubHeroProps {
   children?: ReactNode
+  onComplete?: () => void
 }
 
-export default function KumdoriMouseScrubHero({ children }: KumdoriMouseScrubHeroProps) {
+export default function KumdoriMouseScrubHero({ children, onComplete }: KumdoriMouseScrubHeroProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const targetTimeRef = useRef(0)
   const rafRef = useRef<number | null>(null)
+  const firstInteractionAtRef = useRef<number | null>(null)
+  const minRatioRef = useRef(1)
+  const maxRatioRef = useRef(0)
+  const hasCompletedRef = useRef(false)
+  const completeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     const video = videoRef.current
@@ -37,10 +45,26 @@ export default function KumdoriMouseScrubHero({ children }: KumdoriMouseScrubHer
       targetTimeRef.current = clamped * duration
     }
 
+    const recordInteraction = (ratio: number) => {
+      if (!onComplete || hasCompletedRef.current) return
+      const clamped = Math.min(1, Math.max(0, ratio))
+      const now = performance.now()
+      if (firstInteractionAtRef.current === null) firstInteractionAtRef.current = now
+      minRatioRef.current = Math.min(minRatioRef.current, clamped)
+      maxRatioRef.current = Math.max(maxRatioRef.current, clamped)
+      const elapsed = now - firstInteractionAtRef.current
+      const spread = maxRatioRef.current - minRatioRef.current
+      if (elapsed >= COMPLETE_AFTER_MS || (elapsed >= 700 && spread >= COMPLETE_SPREAD)) {
+        hasCompletedRef.current = true
+        completeTimerRef.current = setTimeout(onComplete, 650)
+      }
+    }
+
     const handlePointerMove = (e: PointerEvent) => {
       const rect = container.getBoundingClientRect()
       const ratio = (e.clientX - rect.left) / rect.width
       setTargetFromRatio(ratio)
+      recordInteraction(ratio)
     }
 
     const handlePointerLeave = () => {
@@ -60,6 +84,7 @@ export default function KumdoriMouseScrubHero({ children }: KumdoriMouseScrubHer
       const rect = container.getBoundingClientRect()
       const ratio = (touch.clientX - rect.left) / rect.width
       setTargetFromRatio(ratio)
+      recordInteraction(ratio)
     }
     container.addEventListener('touchmove', handleTouchMove, { passive: true })
 
@@ -82,7 +107,7 @@ export default function KumdoriMouseScrubHero({ children }: KumdoriMouseScrubHer
         const target = targetTimeRef.current
         const diff = target - current
         // 이미 target에 충분히 가까우면 재할당하지 않아 불필요한 seek을 피한다.
-        if (Math.abs(diff) > 0.005) {
+        if (Math.abs(diff) > 0.002) {
           const next = current + diff * LERP_FACTOR
           if (Number.isFinite(next)) {
             video.currentTime = next
@@ -98,9 +123,10 @@ export default function KumdoriMouseScrubHero({ children }: KumdoriMouseScrubHer
       container.removeEventListener('pointerleave', handlePointerLeave)
       container.removeEventListener('touchmove', handleTouchMove)
       video.removeEventListener('loadedmetadata', handleLoadedMetadata)
+      if (completeTimerRef.current) clearTimeout(completeTimerRef.current)
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
     }
-  }, [])
+  }, [onComplete])
 
   return (
     <section

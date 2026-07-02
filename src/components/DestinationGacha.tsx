@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { destinations } from '../data/destinations'
 import { storyTexts } from '../data/storyTexts'
@@ -6,14 +6,20 @@ import { mediaUrl } from '../lib/media'
 
 const SHUFFLE_TICKS = 12
 const SHUFFLE_INTERVAL_MS = 90
+const AUTO_ARRIVAL_DELAY_MS = 1500
 
 const earthDestination = destinations.find((d) => d.isRealDestination) ?? destinations[0]
 
-export default function DestinationGacha() {
+interface DestinationGachaProps {
+  onComplete?: () => void
+}
+
+export default function DestinationGacha({ onComplete }: DestinationGachaProps) {
   const [isSpinning, setIsSpinning] = useState(false)
   const [result, setResult] = useState<typeof earthDestination | null>(null)
   const [displayName, setDisplayName] = useState<string | null>(null)
   const tickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const completeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const handlePick = () => {
     if (isSpinning || result) return
@@ -36,21 +42,32 @@ export default function DestinationGacha() {
     runTick()
   }
 
+  useEffect(() => {
+    if (!result || !onComplete || completeTimerRef.current) return
+    completeTimerRef.current = setTimeout(onComplete, AUTO_ARRIVAL_DELAY_MS)
+  }, [onComplete, result])
+
+  useEffect(() => {
+    return () => {
+      if (tickTimerRef.current) clearTimeout(tickTimerRef.current)
+      if (completeTimerRef.current) clearTimeout(completeTimerRef.current)
+    }
+  }, [])
+
   return (
-    <section className="relative flex h-screen w-full snap-start flex-col items-center justify-center overflow-hidden bg-cockpit-purple">
+    <section className="relative flex h-screen w-full flex-col items-center justify-center overflow-hidden bg-cockpit-sky px-4">
       <img
         src={mediaUrl('spaceship-gacha-bg.png')}
         alt="목적지 뽑기 캡슐 기계"
         className="absolute inset-0 h-full w-full object-cover"
       />
-      {/* 화려한 배경 위에서도 글이 묻히지 않도록 하는 dark scrim */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#2a1f57]/20 via-[#2a1f57]/45 to-[#2a1f57]/70" />
+      <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-white/0 to-white/35" />
 
-      <div className="relative z-10 flex flex-col items-center gap-4 rounded-[2.5rem] border border-white/20 bg-black/35 px-8 py-10 text-center shadow-2xl backdrop-blur-md md:px-14">
-        <h2 className="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
+      <div className="relative z-10 flex flex-col items-center gap-4 rounded-[2.5rem] border border-white/70 bg-white/72 px-8 py-10 text-center shadow-[0_24px_80px_rgba(50,130,145,0.28)] backdrop-blur-sm md:px-14">
+        <h2 className="text-3xl md:text-4xl font-bold text-[#3b2c76] drop-shadow-sm">
           {storyTexts.gacha.title}
         </h2>
-        <p className="text-white/90">{storyTexts.gacha.description}</p>
+        <p className="text-[#315566]/85">{storyTexts.gacha.description}</p>
 
         {!result && !isSpinning && (
           <motion.button
@@ -75,20 +92,30 @@ export default function DestinationGacha() {
               }
               exit={{ scale: 0.6, opacity: 0 }}
               transition={{ duration: result ? 0.6 : 0.2, ease: 'easeOut' }}
-              className={`mt-6 rounded-2xl bg-white/95 px-10 py-6 shadow-2xl ${
+              className={`mt-6 rounded-[2rem] bg-white/95 px-10 py-7 shadow-2xl ${
                 result ? 'shadow-[0_0_45px_rgba(255,229,138,0.65)]' : ''
               }`}
             >
-              <p className="text-sm text-gray-500">
-                {isSpinning ? '뽑는 중...' : '뽑힌 목적지'}
-              </p>
-              <p className="text-2xl font-bold text-cockpit-purple">{displayName}</p>
+              {isSpinning ? (
+                <>
+                  <p className="text-sm text-gray-500">신호 탐색 중...</p>
+                  <p className="text-2xl font-bold text-cockpit-purple">{displayName}</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-bold text-gray-500">{storyTexts.gacha.resultReady}</p>
+                  <p className="my-3 text-7xl drop-shadow-[0_0_18px_rgba(255,229,138,0.75)]" aria-label={result?.name}>
+                    🌍
+                  </p>
+                  <p className="text-sm text-[#315566]/70">{storyTexts.gacha.autoArrival}</p>
+                </>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
 
         {!isSpinning && !result && (
-          <p className="mt-2 animate-pulse text-white/70 text-sm">{storyTexts.gacha.hint}</p>
+          <p className="mt-2 animate-pulse text-sm text-[#315566]/70">{storyTexts.gacha.hint}</p>
         )}
       </div>
     </section>

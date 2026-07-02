@@ -7,6 +7,7 @@ const WIPE_RADIUS = 92
 // 진행률(0~100)이 이 값 이상이면 "다 닦았다"로 간주
 const CLEAR_THRESHOLD = 70
 const PROGRESS_SAMPLE_INTERVAL_MS = 80
+const AUTO_NEXT_DELAY_MS = 950
 
 interface WindowWipeInteractionProps {
   hand: ReturnType<typeof useHandTracking>
@@ -22,6 +23,7 @@ export default function WindowWipeInteraction({ hand, onNext }: WindowWipeIntera
   const [progress, setProgress] = useState(0)
   const [isCleared, setIsCleared] = useState(false)
   const [brushPos, setBrushPos] = useState<{ x: number; y: number } | null>(null)
+  const nextTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const isHandMode = hand.status === 'ready'
 
@@ -92,6 +94,10 @@ export default function WindowWipeInteraction({ hand, onNext }: WindowWipeIntera
         setProgress(0)
         setIsCleared(false)
         setBrushPos(null)
+        if (nextTimerRef.current) {
+          clearTimeout(nextTimerRef.current)
+          nextTimerRef.current = null
+        }
       }
     }
 
@@ -142,7 +148,10 @@ export default function WindowWipeInteraction({ hand, onNext }: WindowWipeIntera
     if (total === 0) return
     const pct = Math.round((transparent / total) * 100)
     setProgress((prev) => (pct > prev ? pct : prev))
-    if (pct >= CLEAR_THRESHOLD) setIsCleared(true)
+    if (pct >= CLEAR_THRESHOLD && !nextTimerRef.current) {
+      setIsCleared(true)
+      nextTimerRef.current = setTimeout(onNext, AUTO_NEXT_DELAY_MS)
+    }
   }
 
   // 마우스 / 터치 드래그 닦기 (손 인식 모드가 아닐 때)
@@ -192,18 +201,24 @@ export default function WindowWipeInteraction({ hand, onNext }: WindowWipeIntera
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isHandMode, hand.isHandVisible, hand.point])
 
+  useEffect(() => {
+    return () => {
+      if (nextTimerRef.current) clearTimeout(nextTimerRef.current)
+    }
+  }, [])
+
   return (
     <section
-      className="relative flex h-screen w-full snap-start flex-col items-center justify-center overflow-hidden bg-[#07102f] px-4 py-10"
+      className="relative flex h-screen w-full flex-col items-center justify-center overflow-hidden bg-cockpit-mint px-4 py-10"
     >
       <img
         src={mediaUrl('spaceship-window-clear.png')}
         alt="맑은 우주 창밖 풍경"
         className="absolute inset-0 h-full w-full object-cover"
       />
-      <div className="absolute inset-0 bg-[#06102b]/55 backdrop-blur-[2px]" />
+      <div className="absolute inset-0 bg-white/10" />
 
-      <div className="pointer-events-none relative z-20 mb-5 flex max-w-3xl flex-col items-center gap-2 text-center">
+      <div className="pointer-events-none relative z-20 mb-5 flex max-w-3xl flex-col items-center gap-2 rounded-[2rem] bg-white/45 px-6 py-4 text-center shadow-xl backdrop-blur-sm">
         <h2 className="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
           {storyTexts.wipe.title}
         </h2>
@@ -212,7 +227,7 @@ export default function WindowWipeInteraction({ hand, onNext }: WindowWipeIntera
 
       <div
         ref={windowRef}
-        className={`relative z-10 aspect-[16/9] w-[min(92vw,980px)] max-h-[58vh] overflow-hidden rounded-[2rem] border-[10px] border-cockpit-mint/80 bg-cockpit-sky shadow-[0_0_0_1px_rgba(255,255,255,0.45),0_28px_90px_rgba(11,16,48,0.55)] transition duration-700 md:rounded-[3rem] md:border-[16px] ${
+        className={`relative z-10 aspect-[16/9] w-[min(92vw,980px)] max-h-[58vh] overflow-hidden rounded-[2rem] border-[10px] border-white/85 bg-cockpit-sky shadow-[0_0_0_1px_rgba(93,221,214,0.55),0_0_46px_rgba(255,255,255,0.68),0_24px_70px_rgba(38,113,128,0.28)] transition duration-700 md:rounded-[3rem] md:border-[16px] ${
           isCleared ? 'shadow-[0_0_45px_rgba(255,229,138,0.75),0_28px_90px_rgba(11,16,48,0.45)]' : ''
         }`}
       >
@@ -269,42 +284,33 @@ export default function WindowWipeInteraction({ hand, onNext }: WindowWipeIntera
         )}
 
         {isCleared && (
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(255,245,170,0.28),transparent_45%)]" />
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(255,245,170,0.34),transparent_45%)]" />
         )}
       </div>
 
-      {/* 손 인식 상태 패널 — 창문 닦기 섹션 안에서 손 인식을 직접 시작할 수 있는 지점 */}
-      <div className="pointer-events-auto absolute right-4 top-24 z-20 flex flex-col items-center gap-2 rounded-2xl bg-black/45 p-3 text-center backdrop-blur-sm md:right-8">
+      {/* 손 인식 상태 패널: 첫 화면에서 준비된 상태만 표시하고, 여기서 다시 시작하지 않는다. */}
+      <div className="pointer-events-none absolute right-4 top-24 z-20 flex flex-col items-center gap-2 rounded-2xl bg-white/72 p-3 text-center shadow-lg backdrop-blur-sm md:right-8">
         {hand.status === 'idle' && (
-          <>
-            <span className="text-xs font-bold text-white">{storyTexts.wipe.modeMouse}</span>
-            <button
-              type="button"
-              onClick={hand.start}
-              className="rounded-full bg-cockpit-mint px-4 py-2 text-xs font-bold text-[#0b3b3f] shadow transition hover:scale-105 active:scale-95"
-            >
-              {storyTexts.wipe.startHandButton}
-            </button>
-          </>
+          <span className="text-xs font-bold text-[#186277]">{storyTexts.wipe.modeMouse}</span>
         )}
         {(hand.status === 'requesting' || hand.status === 'loading') && (
           <>
-            <span className="text-xs font-bold text-white">{storyTexts.wipe.handStarting}</span>
-            <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-cockpit-mint" />
+            <span className="text-xs font-bold text-[#186277]">{storyTexts.wipe.handStarting}</span>
+            <span className="h-5 w-5 animate-spin rounded-full border-2 border-[#186277]/20 border-t-[#186277]" />
           </>
         )}
         {isHandMode && (
           <>
-            <span className="text-xs font-bold text-white">{storyTexts.wipe.modeHand}</span>
-            <span className="max-w-40 text-[11px] leading-snug text-white/75">
+            <span className="text-xs font-bold text-[#186277]">{storyTexts.wipe.modeHand}</span>
+            <span className="max-w-40 text-[11px] leading-snug text-[#186277]/80">
               {hand.isHandVisible ? storyTexts.wipe.handTracking : storyTexts.wipe.handWaiting}
             </span>
           </>
         )}
         {hand.status === 'error' && (
           <>
-            <span className="text-xs font-bold text-white">{storyTexts.wipe.modeMouse}</span>
-            <span className="max-w-36 text-[11px] leading-snug text-white/70">{hand.errorMessage}</span>
+            <span className="text-xs font-bold text-[#186277]">{storyTexts.wipe.modeMouse}</span>
+            <span className="max-w-36 text-[11px] leading-snug text-[#186277]/80">{hand.errorMessage}</span>
           </>
         )}
       </div>
@@ -323,15 +329,9 @@ export default function WindowWipeInteraction({ hand, onNext }: WindowWipeIntera
             {isHandMode ? storyTexts.wipe.hint : storyTexts.wipe.hintMouse}
           </p>
         ) : (
-          <div className="pointer-events-auto flex flex-col items-center gap-3">
+          <div className="pointer-events-none flex flex-col items-center gap-3">
             <p className="text-base font-bold text-white drop-shadow">{storyTexts.wipe.cleared}</p>
-            <button
-              type="button"
-              onClick={onNext}
-              className="rounded-full bg-white/95 px-6 py-2.5 text-sm font-bold text-[#186277] shadow-lg transition hover:scale-105 active:scale-95"
-            >
-              {storyTexts.wipe.nextButton}
-            </button>
+            <p className="text-sm text-white/75">{storyTexts.wipe.autoNext}</p>
           </div>
         )}
       </div>

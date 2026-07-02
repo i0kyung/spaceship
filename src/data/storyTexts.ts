@@ -34,9 +34,9 @@ export const storyTexts = {
     modeMouse: '🖱 마우스 닦기 모드',
     handWaiting: '검지를 펴서 카메라 앞에 보여주세요.',
     handTracking: '검지 손끝을 브러시로 쓰는 중이에요.',
-    startHandButton: '카메라 손 인식 시작하기',
     handStarting: '손 인식 준비 중…',
-    cleared: '창문이 맑아졌어요! 바깥 풍경이 보여요.',
+    cleared: '창문이 맑아졌어요! 목적지 신호가 도착합니다.',
+    autoNext: '곧 목적지 신호로 이어집니다.',
     nextButton: '목적지 신호 확인하기',
   },
   loading: {
@@ -46,6 +46,8 @@ export const storyTexts = {
     title: '목적지 뽑기',
     description: '맑아진 창문 너머, 목적지 신호가 도착했어요.',
     hint: '캡슐을 뽑아 오늘의 목적지를 확인해보세요.',
+    resultReady: '목적지 신호 확인 완료',
+    autoArrival: '도착 좌표로 이동합니다.',
   },
   arrival: {
     kicker: '꿈돌이의 첫 비행 · 도착',
