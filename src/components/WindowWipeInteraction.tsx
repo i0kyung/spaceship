@@ -3,10 +3,10 @@ import { storyTexts } from '../data/storyTexts'
 import { mediaUrl } from '../lib/media'
 import type { useHandTracking } from '../hooks/useHandTracking'
 
-const WIPE_RADIUS = 65
+const WIPE_RADIUS = 92
 // 진행률(0~100)이 이 값 이상이면 "다 닦았다"로 간주
-const CLEAR_THRESHOLD = 70
-const PROGRESS_SAMPLE_INTERVAL_MS = 150
+const CLEAR_THRESHOLD = 58
+const PROGRESS_SAMPLE_INTERVAL_MS = 80
 
 interface WindowWipeInteractionProps {
   hand: ReturnType<typeof useHandTracking>
@@ -30,15 +30,15 @@ export default function WindowWipeInteraction({ hand, onNext }: WindowWipeIntera
     ctx.globalCompositeOperation = 'source-over'
 
     const baseGradient = ctx.createLinearGradient(0, 0, width, height)
-    baseGradient.addColorStop(0, 'rgba(11, 26, 66, 0.88)')
-    baseGradient.addColorStop(0.48, 'rgba(26, 97, 128, 0.76)')
-    baseGradient.addColorStop(1, 'rgba(8, 18, 52, 0.9)')
+    baseGradient.addColorStop(0, 'rgba(5, 13, 42, 0.95)')
+    baseGradient.addColorStop(0.48, 'rgba(12, 69, 96, 0.88)')
+    baseGradient.addColorStop(1, 'rgba(4, 10, 34, 0.96)')
     ctx.fillStyle = baseGradient
     ctx.fillRect(0, 0, width, height)
 
     const hazeGradient = ctx.createRadialGradient(width * 0.5, height * 0.42, 0, width * 0.5, height * 0.42, width * 0.7)
-    hazeGradient.addColorStop(0, 'rgba(210, 255, 250, 0.4)')
-    hazeGradient.addColorStop(0.45, 'rgba(180, 235, 245, 0.18)')
+    hazeGradient.addColorStop(0, 'rgba(220, 255, 255, 0.48)')
+    hazeGradient.addColorStop(0.45, 'rgba(178, 232, 242, 0.24)')
     hazeGradient.addColorStop(1, 'rgba(6, 12, 42, 0)')
     ctx.fillStyle = hazeGradient
     ctx.fillRect(0, 0, width, height)
@@ -49,8 +49,8 @@ export default function WindowWipeInteraction({ hand, onNext }: WindowWipeIntera
       const x = ((Math.sin(i * 12.989) * 43758.5453) % 1 + 1) % 1
       const y = ((Math.sin(i * 78.233) * 24634.6345) % 1 + 1) % 1
       const length = width * (0.08 + (i % 5) * 0.025)
-      ctx.strokeStyle = `rgba(230, 255, 255, ${0.12 + (i % 4) * 0.035})`
-      ctx.lineWidth = 2 + (i % 3)
+      ctx.strokeStyle = `rgba(230, 255, 255, ${0.16 + (i % 4) * 0.04})`
+      ctx.lineWidth = 3 + (i % 3)
       ctx.beginPath()
       ctx.moveTo(x * width, y * height)
       ctx.quadraticCurveTo(x * width + length * 0.35, y * height - height * 0.04, x * width + length, y * height + Math.sin(t * 9) * height * 0.04)
@@ -62,8 +62,8 @@ export default function WindowWipeInteraction({ hand, onNext }: WindowWipeIntera
       const y = (((Math.cos(i * 5.37) * 10000) % 1 + 1) % 1) * height
       const radius = 10 + (i % 6) * 5
       const drop = ctx.createRadialGradient(x, y, 0, x, y, radius)
-      drop.addColorStop(0, 'rgba(240, 255, 255, 0.2)')
-      drop.addColorStop(0.55, 'rgba(190, 235, 240, 0.1)')
+      drop.addColorStop(0, 'rgba(240, 255, 255, 0.26)')
+      drop.addColorStop(0.55, 'rgba(190, 235, 240, 0.14)')
       drop.addColorStop(1, 'rgba(190, 235, 240, 0)')
       ctx.fillStyle = drop
       ctx.beginPath()
@@ -151,25 +151,31 @@ export default function WindowWipeInteraction({ hand, onNext }: WindowWipeIntera
     const handlePointerDown = (e: PointerEvent) => {
       if (isHandMode) return
       isDrawingRef.current = true
+      canvas.setPointerCapture?.(e.pointerId)
       const rect = canvas.getBoundingClientRect()
       wipeAt(e.clientX - rect.left, e.clientY - rect.top)
     }
     const handlePointerMove = (e: PointerEvent) => {
-      if (isHandMode || !isDrawingRef.current) return
+      if (isHandMode) return
+      if (!isDrawingRef.current && e.buttons !== 1) return
+      isDrawingRef.current = true
       const rect = canvas.getBoundingClientRect()
       wipeAt(e.clientX - rect.left, e.clientY - rect.top)
     }
-    const handlePointerUp = () => {
+    const handlePointerUp = (e: PointerEvent) => {
       isDrawingRef.current = false
+      canvas.releasePointerCapture?.(e.pointerId)
     }
 
     canvas.addEventListener('pointerdown', handlePointerDown)
     canvas.addEventListener('pointermove', handlePointerMove)
     window.addEventListener('pointerup', handlePointerUp)
+    window.addEventListener('pointercancel', handlePointerUp)
     return () => {
       canvas.removeEventListener('pointerdown', handlePointerDown)
       canvas.removeEventListener('pointermove', handlePointerMove)
       window.removeEventListener('pointerup', handlePointerUp)
+      window.removeEventListener('pointercancel', handlePointerUp)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isHandMode, isCleared])
@@ -223,6 +229,13 @@ export default function WindowWipeInteraction({ hand, onNext }: WindowWipeIntera
           }`}
           style={{ cursor: isCleared || isHandMode ? 'default' : 'crosshair' }}
         />
+        {!brushPos && !isCleared && (
+          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+            <div className="rounded-full border border-white/30 bg-black/38 px-5 py-3 text-center text-sm font-bold text-white shadow-2xl backdrop-blur-sm">
+              {isHandMode ? '검지를 펴고 손끝으로 창문을 문질러요' : '마우스를 꾹 누른 채 문질러요'}
+            </div>
+          </div>
+        )}
 
         {/* 부드러운 glow 브러시 커서 */}
         {brushPos && !isCleared && (
@@ -250,6 +263,11 @@ export default function WindowWipeInteraction({ hand, onNext }: WindowWipeIntera
         <span className="text-xs font-bold text-white">
           {isHandMode ? storyTexts.wipe.modeHand : storyTexts.wipe.modeMouse}
         </span>
+        {isHandMode && (
+          <span className="max-w-40 text-[11px] leading-snug text-white/75">
+            {hand.isHandVisible ? storyTexts.wipe.handTracking : storyTexts.wipe.handWaiting}
+          </span>
+        )}
         {hand.status === 'error' && (
           <span className="max-w-36 text-[11px] leading-snug text-white/70">
             {hand.errorMessage}
@@ -265,6 +283,7 @@ export default function WindowWipeInteraction({ hand, onNext }: WindowWipeIntera
             style={{ width: `${Math.min(progress, 100)}%` }}
           />
         </div>
+        <span className="text-xs font-bold text-white/70">{Math.min(progress, 100)}%</span>
         {!isCleared ? (
           <p className="animate-pulse text-sm text-white/70">
             {isHandMode ? storyTexts.wipe.hint : storyTexts.wipe.hintMouse}
