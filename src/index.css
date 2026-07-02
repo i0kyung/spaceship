@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100%;
+  background-color: #0b1030;
+  overflow-x: hidden;
+}
+
+body {
+  font-family: 'Jua', 'Pretendard', sans-serif;
+  color: #1e2a4a;
+}
+
+* {
+  box-sizing: border-box;
+}
