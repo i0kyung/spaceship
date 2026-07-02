@@ -5,7 +5,7 @@ import type { useHandTracking } from '../hooks/useHandTracking'
 
 const WIPE_RADIUS = 92
 // 진행률(0~100)이 이 값 이상이면 "다 닦았다"로 간주
-const CLEAR_THRESHOLD = 58
+const CLEAR_THRESHOLD = 70
 const PROGRESS_SAMPLE_INTERVAL_MS = 80
 
 interface WindowWipeInteractionProps {
@@ -25,21 +25,23 @@ export default function WindowWipeInteraction({ hand, onNext }: WindowWipeIntera
 
   const isHandMode = hand.status === 'ready'
 
+  // 닦기 전 유리막: 밝은 청록 헤이즈 대신 어둡고 탁한 남색/청록 톤의 습기 낀 유리로.
   const drawFrostedGlass = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
     ctx.clearRect(0, 0, width, height)
     ctx.globalCompositeOperation = 'source-over'
 
     const baseGradient = ctx.createLinearGradient(0, 0, width, height)
-    baseGradient.addColorStop(0, 'rgba(5, 13, 42, 0.95)')
-    baseGradient.addColorStop(0.48, 'rgba(12, 69, 96, 0.88)')
-    baseGradient.addColorStop(1, 'rgba(4, 10, 34, 0.96)')
+    baseGradient.addColorStop(0, 'rgba(4, 9, 28, 0.97)')
+    baseGradient.addColorStop(0.5, 'rgba(7, 42, 58, 0.95)')
+    baseGradient.addColorStop(1, 'rgba(3, 7, 24, 0.97)')
     ctx.fillStyle = baseGradient
     ctx.fillRect(0, 0, width, height)
 
-    const hazeGradient = ctx.createRadialGradient(width * 0.5, height * 0.42, 0, width * 0.5, height * 0.42, width * 0.7)
-    hazeGradient.addColorStop(0, 'rgba(220, 255, 255, 0.48)')
-    hazeGradient.addColorStop(0.45, 'rgba(178, 232, 242, 0.24)')
-    hazeGradient.addColorStop(1, 'rgba(6, 12, 42, 0)')
+    // 아주 은은한 청록 헤이즈만 — 예전처럼 화면 전체를 밝히지 않도록 반경/불투명도를 크게 낮춤
+    const hazeGradient = ctx.createRadialGradient(width * 0.5, height * 0.45, 0, width * 0.5, height * 0.45, width * 0.5)
+    hazeGradient.addColorStop(0, 'rgba(110, 195, 205, 0.16)')
+    hazeGradient.addColorStop(0.5, 'rgba(55, 130, 150, 0.08)')
+    hazeGradient.addColorStop(1, 'rgba(4, 9, 28, 0)')
     ctx.fillStyle = hazeGradient
     ctx.fillRect(0, 0, width, height)
 
@@ -49,7 +51,7 @@ export default function WindowWipeInteraction({ hand, onNext }: WindowWipeIntera
       const x = ((Math.sin(i * 12.989) * 43758.5453) % 1 + 1) % 1
       const y = ((Math.sin(i * 78.233) * 24634.6345) % 1 + 1) % 1
       const length = width * (0.08 + (i % 5) * 0.025)
-      ctx.strokeStyle = `rgba(230, 255, 255, ${0.16 + (i % 4) * 0.04})`
+      ctx.strokeStyle = `rgba(180, 225, 230, ${0.1 + (i % 4) * 0.025})`
       ctx.lineWidth = 3 + (i % 3)
       ctx.beginPath()
       ctx.moveTo(x * width, y * height)
@@ -62,9 +64,9 @@ export default function WindowWipeInteraction({ hand, onNext }: WindowWipeIntera
       const y = (((Math.cos(i * 5.37) * 10000) % 1 + 1) % 1) * height
       const radius = 10 + (i % 6) * 5
       const drop = ctx.createRadialGradient(x, y, 0, x, y, radius)
-      drop.addColorStop(0, 'rgba(240, 255, 255, 0.26)')
-      drop.addColorStop(0.55, 'rgba(190, 235, 240, 0.14)')
-      drop.addColorStop(1, 'rgba(190, 235, 240, 0)')
+      drop.addColorStop(0, 'rgba(180, 225, 230, 0.16)')
+      drop.addColorStop(0.55, 'rgba(120, 180, 190, 0.08)')
+      drop.addColorStop(1, 'rgba(120, 180, 190, 0)')
       ctx.fillStyle = drop
       ctx.beginPath()
       ctx.arc(x, y, radius, 0, Math.PI * 2)
@@ -224,15 +226,28 @@ export default function WindowWipeInteraction({ hand, onNext }: WindowWipeIntera
         <div className="pointer-events-none absolute inset-0 rounded-[1.35rem] border border-white/45 md:rounded-[2rem]" />
         <canvas
           ref={canvasRef}
-          className={`absolute inset-0 h-full w-full touch-none transition-opacity duration-700 ${
-            isCleared ? 'opacity-0' : 'opacity-100'
-          }`}
-          style={{ cursor: isCleared || isHandMode ? 'default' : 'crosshair' }}
+          className="absolute inset-0 h-full w-full touch-none transition-opacity duration-500"
+          style={{
+            cursor: isCleared || isHandMode ? 'default' : 'crosshair',
+            // 부분적으로 지워진 것과는 별개로, 진행률이 오를수록 유리막 전체가 은은하게 옅어져
+            // "창문 전체가 점점 환해지는" 느낌을 준다. 70%(완료)에서는 완전히 투명해진다.
+            opacity: isCleared ? 0 : 1 - (Math.min(progress, 100) / 100) * 0.4,
+          }}
         />
+        {/* 진행률에 비례해 번지는 따뜻한 앰비언트 글로우 — 국소 닦기와 별개로 전체 밝기 상승을 연출 */}
+        {!isCleared && progress > 0 && (
+          <div
+            className="pointer-events-none absolute inset-0 transition-opacity duration-300"
+            style={{
+              opacity: (Math.min(progress, 100) / 100) * 0.55,
+              background: 'radial-gradient(circle at 50% 45%, rgba(255,248,222,0.55), transparent 68%)',
+            }}
+          />
+        )}
         {!brushPos && !isCleared && (
           <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
             <div className="rounded-full border border-white/30 bg-black/38 px-5 py-3 text-center text-sm font-bold text-white shadow-2xl backdrop-blur-sm">
-              {isHandMode ? '검지를 펴고 손끝으로 창문을 문질러요' : '마우스를 꾹 누른 채 문질러요'}
+              {isHandMode ? storyTexts.wipe.hint : storyTexts.wipe.hintMouse}
             </div>
           </div>
         )}
@@ -258,20 +273,39 @@ export default function WindowWipeInteraction({ hand, onNext }: WindowWipeIntera
         )}
       </div>
 
-      {/* 손 인식 상태 패널 */}
-      <div className="pointer-events-none absolute right-4 top-24 z-20 flex flex-col items-center gap-2 rounded-2xl bg-black/45 p-3 text-center backdrop-blur-sm md:right-8">
-        <span className="text-xs font-bold text-white">
-          {isHandMode ? storyTexts.wipe.modeHand : storyTexts.wipe.modeMouse}
-        </span>
+      {/* 손 인식 상태 패널 — 창문 닦기 섹션 안에서 손 인식을 직접 시작할 수 있는 지점 */}
+      <div className="pointer-events-auto absolute right-4 top-24 z-20 flex flex-col items-center gap-2 rounded-2xl bg-black/45 p-3 text-center backdrop-blur-sm md:right-8">
+        {hand.status === 'idle' && (
+          <>
+            <span className="text-xs font-bold text-white">{storyTexts.wipe.modeMouse}</span>
+            <button
+              type="button"
+              onClick={hand.start}
+              className="rounded-full bg-cockpit-mint px-4 py-2 text-xs font-bold text-[#0b3b3f] shadow transition hover:scale-105 active:scale-95"
+            >
+              {storyTexts.wipe.startHandButton}
+            </button>
+          </>
+        )}
+        {(hand.status === 'requesting' || hand.status === 'loading') && (
+          <>
+            <span className="text-xs font-bold text-white">{storyTexts.wipe.handStarting}</span>
+            <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-cockpit-mint" />
+          </>
+        )}
         {isHandMode && (
-          <span className="max-w-40 text-[11px] leading-snug text-white/75">
-            {hand.isHandVisible ? storyTexts.wipe.handTracking : storyTexts.wipe.handWaiting}
-          </span>
+          <>
+            <span className="text-xs font-bold text-white">{storyTexts.wipe.modeHand}</span>
+            <span className="max-w-40 text-[11px] leading-snug text-white/75">
+              {hand.isHandVisible ? storyTexts.wipe.handTracking : storyTexts.wipe.handWaiting}
+            </span>
+          </>
         )}
         {hand.status === 'error' && (
-          <span className="max-w-36 text-[11px] leading-snug text-white/70">
-            {hand.errorMessage}
-          </span>
+          <>
+            <span className="text-xs font-bold text-white">{storyTexts.wipe.modeMouse}</span>
+            <span className="max-w-36 text-[11px] leading-snug text-white/70">{hand.errorMessage}</span>
+          </>
         )}
       </div>
 

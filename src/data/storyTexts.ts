@@ -16,13 +16,14 @@ export const storyTexts = {
     startButton: '손 인식 시작하기',
     prepareButton: '손 인식 준비하기',
     closeButton: '접어두기',
-    boardButton: '여행 시작하기',
+    boardButton: '비행 시작하기',
   },
   hero: {
     eyebrow: '1993 → 지금',
     title: '꿈돌이의 첫 비행',
-    subtitle: '우주선에 올라탄 꿈돌이가, 마우스를 따라 두리번거려요.',
+    subtitle: '마우스를 움직이면, 꿈돌이가 나를 따라봐요.',
     hint: '마우스를 좌우로 움직여보세요',
+    handTeaser: '다음 창에서는 손으로 우주창을 닦을 수 있어요',
   },
   wipe: {
     title: '창문에 성에가 꼈어요',
@@ -33,6 +34,8 @@ export const storyTexts = {
     modeMouse: '🖱 마우스 닦기 모드',
     handWaiting: '검지를 펴서 카메라 앞에 보여주세요.',
     handTracking: '검지 손끝을 브러시로 쓰는 중이에요.',
+    startHandButton: '카메라 손 인식 시작하기',
+    handStarting: '손 인식 준비 중…',
     cleared: '창문이 맑아졌어요! 바깥 풍경이 보여요.',
     nextButton: '목적지 신호 확인하기',
   },
@@ -41,13 +44,15 @@ export const storyTexts = {
   },
   gacha: {
     title: '목적지 뽑기',
-    description: '맑아진 창문 너머로 목적지 신호가 도착했어요.',
-    hint: '캡슐을 뽑아 목적지를 확인해보세요.',
+    description: '맑아진 창문 너머, 목적지 신호가 도착했어요.',
+    hint: '캡슐을 뽑아 오늘의 목적지를 확인해보세요.',
   },
   arrival: {
-    title: '어디를 뽑아도, 별빛은 한 곳을 가리켰다.',
+    kicker: '꿈돌이의 첫 비행 · 도착',
+    title: '별빛이 가리킨 곳은 결국 하나였어요.',
     subtitle: '지구. 그리고 대전.',
     description:
       '수많은 별들 사이에서도, 꿈돌이의 우주선은 결국 푸른 지구로 향합니다. 1993 대전엑스포의 꿈을 실은 채로.',
+    closing: '꿈돌이의 첫 비행이 도착했습니다.',
   },
 } as const

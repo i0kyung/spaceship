@@ -2,7 +2,7 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/spaceship/media/kumdori-reference-sheet.png" />
+    <link rel="icon" type="image/png" href="media/kumdori-reference-sheet.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>꿈돌이의 첫 비행</title>
     <meta name="description" content="1993 대전엑스포 마스코트 꿈돌이와 함께, 우주선을 타고 지구 대전으로 떠나는 인터랙티브 스토리" />
@@ -16,12 +16,15 @@
   <body>
     <div id="root"></div>
     <script>
-      const isViteDev = ['localhost', '127.0.0.1', '::1'].includes(location.hostname) && location.port === '5173'
+      // 상대경로만 사용 — 이 페이지는 dev('/spaceship/')와 prod(GitHub Pages '/spaceship/')
+      // 어느 쪽에서도 항상 base 경로 자체에서 서빙되므로, 절대경로로 '/spaceship/'을
+      // 하드코딩하면 base가 바뀌거나 이중으로 붙는(예: '/spaceship/spaceship/media/...') 문제가 생긴다.
+      const isViteDev = ['localhost', '127.0.0.1', '::1'].includes(location.hostname)
       if (isViteDev) {
-        document.write('<script type="module" src="/src/main.tsx"><\/script>')
+        document.write('<script type="module" src="src/main.tsx"><\/script>')
       } else {
-        document.write('<link rel="stylesheet" href="/spaceship/assets/main.css" />')
-        document.write('<script type="module" src="/spaceship/assets/index.js"><\/script>')
+        document.write('<link rel="stylesheet" href="assets/main.css" />')
+        document.write('<script type="module" src="assets/index.js"><\/script>')
       }
     </script>
   </body>

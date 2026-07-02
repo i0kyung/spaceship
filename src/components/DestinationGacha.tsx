@@ -43,30 +43,41 @@ export default function DestinationGacha() {
         alt="목적지 뽑기 캡슐 기계"
         className="absolute inset-0 h-full w-full object-cover"
       />
+      {/* 화려한 배경 위에서도 글이 묻히지 않도록 하는 dark scrim */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[#2a1f57]/20 via-[#2a1f57]/45 to-[#2a1f57]/70" />
 
-      <div className="relative z-10 flex flex-col items-center gap-4 text-center px-4">
+      <div className="relative z-10 flex flex-col items-center gap-4 rounded-[2.5rem] border border-white/20 bg-black/35 px-8 py-10 text-center shadow-2xl backdrop-blur-md md:px-14">
         <h2 className="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
           {storyTexts.gacha.title}
         </h2>
         <p className="text-white/90">{storyTexts.gacha.description}</p>
 
         {!result && !isSpinning && (
-          <button
+          <motion.button
             type="button"
             onClick={handlePick}
-            className="mt-6 rounded-full bg-white/90 px-8 py-4 text-xl font-bold text-cockpit-purple shadow-lg transition hover:scale-105 active:scale-95"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="mt-6 rounded-full bg-cockpit-yellow px-8 py-4 text-xl font-bold text-[#3b2c76] shadow-[0_0_25px_rgba(255,229,138,0.55)] transition"
           >
             캡슐 뽑기
-          </button>
+          </motion.button>
         )}
 
         <AnimatePresence>
           {(isSpinning || result) && displayName && (
             <motion.div
               initial={{ scale: 0.6, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
+              animate={
+                result
+                  ? { scale: [0.6, 1.12, 1], opacity: 1 }
+                  : { scale: 1, opacity: 1 }
+              }
               exit={{ scale: 0.6, opacity: 0 }}
-              className="mt-6 rounded-2xl bg-white/95 px-10 py-6 shadow-2xl"
+              transition={{ duration: result ? 0.6 : 0.2, ease: 'easeOut' }}
+              className={`mt-6 rounded-2xl bg-white/95 px-10 py-6 shadow-2xl ${
+                result ? 'shadow-[0_0_45px_rgba(255,229,138,0.65)]' : ''
+              }`}
             >
               <p className="text-sm text-gray-500">
                 {isSpinning ? '뽑는 중...' : '뽑힌 목적지'}

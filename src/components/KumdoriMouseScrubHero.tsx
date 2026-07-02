@@ -114,8 +114,12 @@ export default function KumdoriMouseScrubHero({ children }: KumdoriMouseScrubHer
         className="pointer-events-none absolute inset-0 h-full w-full object-cover"
       />
 
-      {/* 꿈돌이 영상 레이어 — 잘리지 않도록 object-contain으로 전체 프레임을 보존하며 중앙 배치 */}
+      {/* 꿈돌이 영상 레이어 — 배경과 한 장면처럼 보이도록 글로우 + feather 마스크로 경계를 녹여줌 */}
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+        {/* 캐릭터를 배경 톤에 붙여주는 소프트 글로우 */}
+        <div className="absolute h-[62%] w-[62%] rounded-full bg-cockpit-sky/50 blur-3xl" />
+        {/* 발밑 그림자로 장면에 고정 */}
+        <div className="absolute bottom-[10%] h-7 w-44 rounded-full bg-[#0b1030]/25 blur-xl" />
         <video
           ref={videoRef}
           src={mediaUrl('kumdori-look.mp4')}
@@ -124,29 +128,32 @@ export default function KumdoriMouseScrubHero({ children }: KumdoriMouseScrubHer
           preload="auto"
           autoPlay={false}
           // 화면을 꽉 채우고 싶다면 object-cover로 바꿀 수 있지만, 얼굴/몸통이 잘릴 수 있습니다.
-          className="h-auto max-h-[85%] w-auto max-w-[92%] object-contain drop-shadow-2xl"
+          // mask-image로 영상의 네모난 경계를 페더링해 배경 일러스트와 자연스럽게 섞이게 한다.
+          style={{
+            WebkitMaskImage:
+              'radial-gradient(ellipse 62% 64% at 50% 46%, black 55%, transparent 94%)',
+            maskImage: 'radial-gradient(ellipse 62% 64% at 50% 46%, black 55%, transparent 94%)',
+          }}
+          className="relative h-auto max-h-[85%] w-auto max-w-[92%] object-contain [filter:saturate(1.05)_contrast(0.97)]"
         />
       </div>
 
       {/* 하단 텍스트 가독성을 위한 얇은 그라데이션 스크림 */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/50 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/55 to-transparent" />
 
       {/* 투명한 pointer 감지 영역 (전체를 덮되 UI 클릭은 막지 않음) */}
       <div className="absolute inset-0 z-10" />
 
-      {/* 텍스트 / UI */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-8 z-20 grid gap-5 px-4 md:bottom-10 md:grid-cols-[minmax(0,1fr)_360px] md:items-end md:px-10">
-        <div className="flex max-w-3xl flex-col gap-2 text-center md:text-left">
-          <span className="text-sm tracking-widest text-white/80">{storyTexts.hero.eyebrow}</span>
-          <h1 className="text-4xl font-bold text-white drop-shadow-lg md:text-6xl">
-            {storyTexts.hero.title}
-          </h1>
-          <p className="text-lg text-white/90 md:text-xl">{storyTexts.hero.subtitle}</p>
-          <p className="mt-2 animate-pulse text-sm text-white/70">{storyTexts.hero.hint}</p>
-        </div>
-        <div className="pointer-events-auto justify-self-center md:justify-self-end">
-          {children}
-        </div>
+      {/* 텍스트 / UI — 꿈돌이와 제목이 화면의 주인공이 되도록 하나의 중앙 컬럼으로 정리 */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-8 z-20 flex flex-col items-center gap-3 px-4 text-center md:bottom-12">
+        <span className="text-sm tracking-widest text-white/80">{storyTexts.hero.eyebrow}</span>
+        <h1 className="text-4xl font-bold text-white drop-shadow-lg md:text-6xl">
+          {storyTexts.hero.title}
+        </h1>
+        <p className="text-lg text-white/90 md:text-xl">{storyTexts.hero.subtitle}</p>
+        <p className="animate-pulse text-sm text-white/70">{storyTexts.hero.hint}</p>
+        <p className="text-xs text-white/60">🖐 {storyTexts.hero.handTeaser}</p>
+        <div className="pointer-events-auto mt-2">{children}</div>
       </div>
     </section>
   )
