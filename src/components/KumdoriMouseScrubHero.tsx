@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { ReactNode, useEffect, useRef } from 'react'
 import { storyTexts } from '../data/storyTexts'
 import { mediaUrl } from '../lib/media'
 
@@ -9,7 +9,11 @@ const RETURN_TO_CENTER = true
 // currentTime이 targetTime을 따라가는 보간 속도 (0~1). 낮을수록 부드럽고 느리게 반응합니다.
 const LERP_FACTOR = 0.08
 
-export default function KumdoriMouseScrubHero() {
+interface KumdoriMouseScrubHeroProps {
+  children?: ReactNode
+}
+
+export default function KumdoriMouseScrubHero({ children }: KumdoriMouseScrubHeroProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const targetTimeRef = useRef(0)
@@ -131,13 +135,18 @@ export default function KumdoriMouseScrubHero() {
       <div className="absolute inset-0 z-10" />
 
       {/* 텍스트 / UI */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-10 z-20 flex flex-col items-center gap-2 text-center px-4">
-        <span className="text-sm tracking-widest text-white/80">{storyTexts.hero.eyebrow}</span>
-        <h1 className="text-4xl md:text-6xl font-bold text-white drop-shadow-lg">
-          {storyTexts.hero.title}
-        </h1>
-        <p className="text-white/90 text-lg">{storyTexts.hero.subtitle}</p>
-        <p className="mt-4 animate-pulse text-white/70 text-sm">{storyTexts.hero.hint}</p>
+      <div className="pointer-events-none absolute inset-x-0 bottom-8 z-20 grid gap-5 px-4 md:bottom-10 md:grid-cols-[minmax(0,1fr)_360px] md:items-end md:px-10">
+        <div className="flex max-w-3xl flex-col gap-2 text-center md:text-left">
+          <span className="text-sm tracking-widest text-white/80">{storyTexts.hero.eyebrow}</span>
+          <h1 className="text-4xl font-bold text-white drop-shadow-lg md:text-6xl">
+            {storyTexts.hero.title}
+          </h1>
+          <p className="text-lg text-white/90 md:text-xl">{storyTexts.hero.subtitle}</p>
+          <p className="mt-2 animate-pulse text-sm text-white/70">{storyTexts.hero.hint}</p>
+        </div>
+        <div className="pointer-events-auto justify-self-center md:justify-self-end">
+          {children}
+        </div>
       </div>
     </section>
   )

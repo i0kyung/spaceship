@@ -11,7 +11,13 @@ function App() {
   const hand = useHandTracking()
   const [hasBoarded, setHasBoarded] = useState(false)
   const [isTraveling, setIsTraveling] = useState(false)
+  const wipeSectionRef = useRef<HTMLDivElement>(null)
   const gachaSectionRef = useRef<HTMLDivElement>(null)
+
+  const handleBoard = () => {
+    setHasBoarded(true)
+    wipeSectionRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
 
   const handleTravelDone = () => {
     setIsTraveling(false)
@@ -20,13 +26,16 @@ function App() {
 
   return (
     <main className="snap-y snap-mandatory">
-      {!hasBoarded && <BoardingGate hand={hand} onBoard={() => setHasBoarded(true)} />}
       {isTraveling && <TravelLoadingOverlay onDone={handleTravelDone} />}
 
       {/* 1. 첫 만남 */}
-      <KumdoriMouseScrubHero />
+      <KumdoriMouseScrubHero>
+        {!hasBoarded && <BoardingGate hand={hand} onBoard={handleBoard} />}
+      </KumdoriMouseScrubHero>
       {/* 2. 우주창 닦기 */}
-      <WindowWipeInteraction hand={hand} onNext={() => setIsTraveling(true)} />
+      <div ref={wipeSectionRef}>
+        <WindowWipeInteraction hand={hand} onNext={() => setIsTraveling(true)} />
+      </div>
       {/* 3. 목적지 뽑기 */}
       <div ref={gachaSectionRef}>
         <DestinationGacha />
